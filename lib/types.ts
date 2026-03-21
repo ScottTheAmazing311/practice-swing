@@ -7,10 +7,10 @@ export interface ClubFeedback {
   accuracy?: number;        // 0-6: Hook City(0) → Straight(3) → Slice Town(6)
   power?: number;           // 0-4: Pathetic(0) → Juiced(4)
   consistency?: number;     // 1, 25, 50, 75, 100
-  inTheSlot?: boolean;
-  takeAway?: boolean;
-  headMovement?: boolean;
-  bodyRotation?: boolean;
+  takeAway?: number;       // -1 = worse, 0 = same, 1 = better
+  bodyRotation?: number;
+  weightTransfer?: number;
+  compression?: number;
   putting?: number;         // 0-4: Awful(0) → Tiger(4) — putter only
 }
 

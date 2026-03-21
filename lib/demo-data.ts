@@ -16,8 +16,8 @@ const MOCK_SESSIONS: SavedSession[] = [
       { id: 'c3', club: 'Wedges', rating: 6 },
     ],
     session_feedback: {
-      Driver: { accuracy: 4, power: 3, consistency: 50, bodyRotation: true },
-      Irons: { accuracy: 3, power: 2, consistency: 75, inTheSlot: true },
+      Driver: { accuracy: 4, power: 3, consistency: 50, bodyRotation: 1 },
+      Irons: { accuracy: 3, power: 2, consistency: 75, compression: 1 },
       Wedges: { accuracy: 3, power: 1, consistency: 25 },
     },
     session_disciplines: [],

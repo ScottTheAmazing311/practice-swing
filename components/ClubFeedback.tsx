@@ -14,10 +14,10 @@ const PUTTING_LABELS = ['Awful', 'Meh', 'OK', 'Solid', 'Tiger'];
 const PUTTING_COLORS = ['#EF4444', '#FB923C', '#FACC15', '#4ADE80', '#22D3EE'];
 
 const THUMBS_ITEMS = [
-  { key: 'inTheSlot', label: 'In the Slot' },
-  { key: 'takeAway', label: 'Take Away' },
-  { key: 'headMovement', label: 'Head Movement' },
-  { key: 'bodyRotation', label: 'Body Rotation' },
+  { key: 'takeAway', label: 'Takeaway' },
+  { key: 'bodyRotation', label: 'Rotation' },
+  { key: 'weightTransfer', label: 'Weight Transfer' },
+  { key: 'compression', label: 'Compression' },
 ] as const;
 
 export default function ClubFeedbackPanel({
@@ -285,61 +285,63 @@ export default function ClubFeedbackPanel({
         </div>
       )}
 
-      {/* ── Thumbs Up / Down ── */}
+      {/* ── Fundamentals ── */}
       <div>
         <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-3">
-          Feels Check
+          Fundamentals
         </p>
         <div className="grid grid-cols-2 gap-2">
           {THUMBS_ITEMS.map(({ key, label }) => {
-            const val = feedback[key];
+            const val = feedback[key] as number | undefined;
             return (
               <div key={key} className="flex items-center h-11">
-                {/* Thumbs up */}
+                {/* Minus (worse) */}
                 <button
-                  onClick={() => set({ [key]: val === true ? undefined : true })}
+                  onClick={() => set({ [key]: val === -1 ? undefined : -1 })}
                   className={`
                     w-9 h-full flex items-center justify-center rounded-l-lg border
-                    transition-all duration-150 active:scale-95
-                    ${val === true
-                      ? 'bg-accent/15 border-accent/40 text-accent'
-                      : 'border-border text-text-muted/40 hover:text-text-muted'
-                    }
-                  `}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m7.72-6.97H5.904m7.72 0a2.25 2.25 0 0 0 .75-3c-.593-1-.998-1.75-1.5-2.5" />
-                  </svg>
-                </button>
-
-                {/* Label */}
-                <span className={`
-                  flex-1 h-full px-2 flex items-center text-[11px] font-medium border-y whitespace-nowrap
-                  ${val === true
-                    ? 'border-accent/40 text-accent'
-                    : val === false
-                      ? 'border-danger/40 text-danger'
-                      : 'border-border text-text-muted'
-                  }
-                `}>
-                  {label}
-                </span>
-
-                {/* Thumbs down */}
-                <button
-                  onClick={() => set({ [key]: val === false ? undefined : false })}
-                  className={`
-                    w-9 h-full flex items-center justify-center rounded-r-lg border
-                    transition-all duration-150 active:scale-95
-                    ${val === false
+                    transition-all duration-150 active:scale-95 text-base font-bold
+                    ${val === -1
                       ? 'bg-danger/15 border-danger/40 text-danger'
                       : 'border-border text-text-muted/40 hover:text-text-muted'
                     }
                   `}
                 >
-                  <svg className="w-4 h-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m7.72-6.97H5.904m7.72 0a2.25 2.25 0 0 0 .75-3c-.593-1-.998-1.75-1.5-2.5" />
-                  </svg>
+                  -
+                </button>
+
+                {/* Equal (same) */}
+                <button
+                  onClick={() => set({ [key]: val === 0 ? undefined : 0 })}
+                  className={`
+                    flex-1 h-full flex items-center justify-center border-y
+                    transition-all duration-150 active:scale-95
+                    ${val === 0
+                      ? 'bg-accent-warm/15 border-accent-warm/40'
+                      : 'border-border'
+                    }
+                  `}
+                >
+                  <span className={`text-[11px] font-medium whitespace-nowrap ${
+                    val === 0 ? 'text-accent-warm' : val === -1 ? 'text-danger' : val === 1 ? 'text-accent' : 'text-text-muted'
+                  }`}>
+                    {label}
+                  </span>
+                </button>
+
+                {/* Plus (better) */}
+                <button
+                  onClick={() => set({ [key]: val === 1 ? undefined : 1 })}
+                  className={`
+                    w-9 h-full flex items-center justify-center rounded-r-lg border
+                    transition-all duration-150 active:scale-95 text-base font-bold
+                    ${val === 1
+                      ? 'bg-accent/15 border-accent/40 text-accent'
+                      : 'border-border text-text-muted/40 hover:text-text-muted'
+                    }
+                  `}
+                >
+                  +
                 </button>
               </div>
             );

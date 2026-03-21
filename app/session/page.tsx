@@ -21,6 +21,7 @@ export default function SessionPage() {
   const [activeRating, setActiveRating] = useState(5);
   const [clubFeedback, setClubFeedback] = useState<Record<string, ClubFeedbackType>>({});
   const [vibeEmoji, setVibeEmoji] = useState('');
+  const [grindLocation, setGrindLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -114,7 +115,7 @@ export default function SessionPage() {
     }
 
     if (share) {
-      const text = generateShareText(ratings, clubFeedback, notes, vibeEmoji);
+      const text = generateShareText(ratings, clubFeedback, notes, vibeEmoji, grindLocation);
       try {
         await navigator.clipboard.writeText(text);
         showToast('Copied to clipboard');
@@ -269,8 +270,43 @@ export default function SessionPage() {
         <Header title="Wrap Up" onBack={() => setView('clubs')} />
 
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-8">
-          {/* Vibe emoji */}
+          {/* Location */}
           <div className="anim-fade-up">
+            <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-4">
+              Where did you grind today?
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: 'net', label: 'Net', image: '/vibes/net.png' },
+                { id: 'sim', label: 'Sim', image: '/vibes/sim.png' },
+                { id: 'range', label: 'Range', image: '/vibes/range.png' },
+              ].map((loc) => {
+                const selected = grindLocation === loc.id;
+                return (
+                  <button
+                    key={loc.id}
+                    onClick={() => setGrindLocation(selected ? '' : loc.id)}
+                    className={`
+                      aspect-square rounded-2xl overflow-hidden
+                      transition-all duration-150 active:scale-90 border-2
+                      ${selected
+                        ? 'border-accent scale-105 shadow-lg shadow-accent/10'
+                        : 'border-border hover:border-text-muted/30'
+                      }
+                    `}
+                  >
+                    <div
+                      className="w-full h-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${loc.image})` }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Vibe emoji */}
+          <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
             <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-4">
               Today I hit like:
             </p>
@@ -378,7 +414,7 @@ export default function SessionPage() {
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
           {/* Share card preview */}
           <div className="anim-fade-up">
-            <ShareCard ratings={ratings} feedback={clubFeedback} notes={notes} vibeEmoji={vibeEmoji} />
+            <ShareCard ratings={ratings} feedback={clubFeedback} notes={notes} vibeEmoji={vibeEmoji} grindLocation={grindLocation} />
           </div>
 
           {/* Video upload */}

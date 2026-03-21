@@ -16,11 +16,13 @@ export default function ShareCard({
   feedback,
   notes,
   vibeEmoji,
+  grindLocation,
 }: {
   ratings: ClubRating[];
   feedback: Record<string, ClubFeedback>;
   notes?: string;
   vibeEmoji?: string;
+  grindLocation?: string;
 }) {
   return (
     <div
@@ -40,6 +42,13 @@ export default function ShareCard({
           })}
         </p>
       </div>
+
+      {/* Grind location */}
+      {grindLocation && (
+        <p className="text-xs text-text-muted">
+          <span className="text-text/70 font-medium capitalize">{grindLocation}</span> session
+        </p>
+      )}
 
       {/* Wordle-style grid */}
       <div className="space-y-2">
@@ -175,10 +184,10 @@ function skillBall(value: number | undefined, type: 'accuracy' | 'power' | 'cons
 
 function getFeelsScore(fb: ClubFeedback): number {
   let score = 0;
-  const keys = ['inTheSlot', 'takeAway', 'headMovement', 'bodyRotation'] as const;
+  const keys = ['takeAway', 'bodyRotation', 'weightTransfer', 'compression'] as const;
   for (const k of keys) {
-    if (fb[k] === true) score++;
-    if (fb[k] === false) score--;
+    const v = fb[k];
+    if (typeof v === 'number') score += v;
   }
   return score;
 }
@@ -187,7 +196,8 @@ export function generateShareText(
   ratings: ClubRating[],
   feedback: Record<string, ClubFeedback>,
   notes: string,
-  vibeEmoji?: string
+  vibeEmoji?: string,
+  grindLocation?: string
 ): string {
   const empty = '\u2B1B'; // black square
 
@@ -220,7 +230,7 @@ export function generateShareText(
     let totalFeels = 0;
     let feelsCount = 0;
     fbEntries.forEach(fb => {
-      const keys = ['inTheSlot', 'takeAway', 'headMovement', 'bodyRotation'] as const;
+      const keys = ['takeAway', 'bodyRotation', 'weightTransfer', 'compression'] as const;
       const hasAny = keys.some(k => fb[k] !== undefined);
       if (hasAny) {
         totalFeels += getFeelsScore(fb);
@@ -237,7 +247,10 @@ export function generateShareText(
     skillBall(feelsVal, 'feels'),
   ].join('');
 
-  let text = `Practice Swing\n\nClubs\n${clubLines}\n\nSkills\n${skillDots}`;
+  const LOCATION_EMOJI: Record<string, string> = { net: '\u{1F3E0}', sim: '\u{1F3AE}', range: '\u{1F3CC}\uFE0F' };
+  const locationLine = grindLocation ? `${LOCATION_EMOJI[grindLocation] ?? ''} ${grindLocation.charAt(0).toUpperCase() + grindLocation.slice(1)} session` : '';
+
+  let text = `Practice Swing${locationLine ? `\n${locationLine}` : ''}\n\nClubs\n${clubLines}\n\nSkills\n${skillDots}`;
 
   if (notes && notes.trim()) {
     text += `\n\n"${notes.trim()}"`;
