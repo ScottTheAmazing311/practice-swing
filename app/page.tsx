@@ -1,18 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { IS_DEMO } from '@/lib/supabase';
 
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Demo banner */}
-      {IS_DEMO && (
-        <div className="bg-bg-card border-b border-border text-center py-2 text-xs text-text-muted tracking-wide">
-          DEMO MODE
-        </div>
-      )}
-
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
         {/* Hero image */}

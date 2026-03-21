@@ -12,13 +12,6 @@ import ShareCard, { generateShareText } from '@/components/ShareCard';
 import Toast from '@/components/Toast';
 import { VIBE_OPTIONS } from '@/components/VibeIcons';
 
-const BUCKET_OPTIONS = [
-  { label: 'Small Bucket', balls: 30 },
-  { label: 'Medium Bucket', balls: 50 },
-  { label: 'Large Bucket', balls: 80 },
-  { label: 'Several Large', balls: 100 },
-];
-
 type View = 'clubs' | 'rating' | 'wrapup' | 'summary';
 
 export default function SessionPage() {
@@ -27,7 +20,6 @@ export default function SessionPage() {
   const [activeClub, setActiveClub] = useState<string | null>(null);
   const [activeRating, setActiveRating] = useState(5);
   const [clubFeedback, setClubFeedback] = useState<Record<string, ClubFeedbackType>>({});
-  const [ballsHit, setBallsHit] = useState(0);
   const [vibeEmoji, setVibeEmoji] = useState('');
   const [notes, setNotes] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -75,7 +67,7 @@ export default function SessionPage() {
 
     if (IS_DEMO) {
       await new Promise((r) => setTimeout(r, 400));
-      saveDemoSession(ratings, clubFeedback, ballsHit, notes, share);
+      saveDemoSession(ratings, clubFeedback, 0, notes, share);
     } else {
       const supabase = getSupabase();
       if (supabase) {
@@ -103,7 +95,7 @@ export default function SessionPage() {
                 user_id: user.id,
                 notes: notes.trim() || null,
                 video_url: videoUrl,
-                balls_hit: ballsHit || null,
+                balls_hit: null,
                 discord_shared: share,
               })
               .select()
@@ -122,7 +114,7 @@ export default function SessionPage() {
     }
 
     if (share) {
-      const text = generateShareText(ratings, clubFeedback, ballsHit, vibeEmoji);
+      const text = generateShareText(ratings, clubFeedback, notes, vibeEmoji);
       try {
         await navigator.clipboard.writeText(text);
         showToast('Copied to clipboard');
@@ -277,41 +269,8 @@ export default function SessionPage() {
         <Header title="Wrap Up" onBack={() => setView('clubs')} />
 
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-8">
-          {/* Bucket selection */}
-          <div className="anim-fade-up">
-            <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-4">
-              How many balls did you hit?
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {BUCKET_OPTIONS.map((opt) => {
-                const selected = ballsHit === opt.balls;
-                return (
-                  <button
-                    key={opt.balls}
-                    onClick={() => setBallsHit(selected ? 0 : opt.balls)}
-                    className={`
-                      py-4 rounded-2xl text-center transition-all duration-150
-                      active:scale-[0.97] border-2
-                      ${selected
-                        ? 'border-accent bg-accent/10 shadow-lg shadow-accent/10'
-                        : 'border-border hover:border-text-muted/30'
-                      }
-                    `}
-                  >
-                    <span className={`text-2xl font-bold tabular-nums block ${selected ? 'text-accent' : 'text-text'}`}>
-                      {opt.balls === 100 ? '100+' : opt.balls}
-                    </span>
-                    <span className={`text-[11px] font-medium mt-1 block ${selected ? 'text-accent/70' : 'text-text-muted'}`}>
-                      {opt.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Vibe emoji */}
-          <div className="anim-fade-up" style={{ animationDelay: '80ms' }}>
+          <div className="anim-fade-up">
             <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-4">
               Today I hit like:
             </p>
@@ -338,6 +297,25 @@ export default function SessionPage() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div className="anim-fade-up" style={{ animationDelay: '80ms' }}>
+            <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-3">
+              Care to comment?
+            </p>
+            <div className="relative">
+              <textarea
+                value={notes}
+                onChange={(e) => e.target.value.length <= 280 && setNotes(e.target.value)}
+                placeholder="How'd it go out there?"
+                rows={3}
+                className="w-full bg-bg-card border border-border rounded-xl p-4 text-sm text-text placeholder:text-text-muted/40 resize-none focus:outline-none focus:border-accent/40 transition-colors duration-200"
+              />
+              <span className="absolute bottom-3 right-3 text-[10px] text-text-muted/40 tabular-nums">
+                {notes.length}/280
+              </span>
             </div>
           </div>
         </main>
@@ -400,30 +378,11 @@ export default function SessionPage() {
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
           {/* Share card preview */}
           <div className="anim-fade-up">
-            <ShareCard ratings={ratings} feedback={clubFeedback} ballsHit={ballsHit} vibeEmoji={vibeEmoji} />
-          </div>
-
-          {/* Notes */}
-          <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
-            <label className="block text-xs text-text-muted font-medium uppercase tracking-wider mb-2">
-              Session Notes
-            </label>
-            <div className="relative">
-              <textarea
-                value={notes}
-                onChange={(e) => e.target.value.length <= 280 && setNotes(e.target.value)}
-                placeholder="Anything to remember?"
-                rows={3}
-                className="w-full bg-bg-card border border-border rounded-xl p-4 text-sm text-text placeholder:text-text-muted/40 resize-none focus:outline-none focus:border-accent/40 transition-colors duration-200"
-              />
-              <span className="absolute bottom-3 right-3 text-[10px] text-text-muted/40 tabular-nums">
-                {notes.length}/280
-              </span>
-            </div>
+            <ShareCard ratings={ratings} feedback={clubFeedback} notes={notes} vibeEmoji={vibeEmoji} />
           </div>
 
           {/* Video upload */}
-          <div className="anim-fade-up" style={{ animationDelay: '120ms' }}>
+          <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
             {!videoFile ? (
               <label className="block w-full min-h-[100px] rounded-xl border border-dashed border-border hover:border-text-muted/40 bg-bg-card/30 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4">
                 <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -486,6 +445,7 @@ export default function SessionPage() {
 
   return null;
 }
+
 
 // ──── Shared header ────
 

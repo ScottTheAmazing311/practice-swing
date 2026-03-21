@@ -100,7 +100,7 @@ export default function HistoryPage() {
 
   const handleShare = async (s: SavedSession) => {
     const ratings = s.session_clubs.map((c) => ({ club: c.club, rating: c.rating }));
-    const text = generateShareText(ratings, s.session_feedback ?? {}, s.balls_hit ?? 0);
+    const text = generateShareText(ratings, s.session_feedback ?? {}, s.notes ?? '');
     try {
       await navigator.clipboard.writeText(text);
       showToast('Copied to clipboard');

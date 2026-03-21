@@ -14,12 +14,12 @@ const PUTTING_LABELS = ['Awful', 'Meh', 'OK', 'Solid', 'Tiger'];
 export default function ShareCard({
   ratings,
   feedback,
-  ballsHit,
+  notes,
   vibeEmoji,
 }: {
   ratings: ClubRating[];
   feedback: Record<string, ClubFeedback>;
-  ballsHit: number;
+  notes?: string;
   vibeEmoji?: string;
 }) {
   return (
@@ -104,10 +104,10 @@ export default function ShareCard({
         </div>
       )}
 
-      {/* Balls hit */}
-      {ballsHit > 0 && (
-        <p className="text-xs text-text-muted">
-          {ballsHit >= 100 ? '100+' : ballsHit} balls hit
+      {/* Notes */}
+      {notes && notes.trim() && (
+        <p className="text-xs text-text/70 italic">
+          &ldquo;{notes.trim()}&rdquo;
         </p>
       )}
 
@@ -186,7 +186,7 @@ function getFeelsScore(fb: ClubFeedback): number {
 export function generateShareText(
   ratings: ClubRating[],
   feedback: Record<string, ClubFeedback>,
-  ballsHit: number,
+  notes: string,
   vibeEmoji?: string
 ): string {
   const empty = '\u2B1B'; // black square
@@ -239,15 +239,15 @@ export function generateShareText(
 
   let text = `Practice Swing\n\nClubs\n${clubLines}\n\nSkills\n${skillDots}`;
 
-  if (ballsHit > 0) {
-    text += `\n\n${ballsHit >= 100 ? '100+' : ballsHit} balls hit`;
+  if (notes && notes.trim()) {
+    text += `\n\n"${notes.trim()}"`;
   }
 
   if (vibeEmoji) {
     text += `\n\nToday I hit like:\n${vibeEmoji}`;
   }
 
-  text += '\n\npracticeswing.app';
+  text += '\n\npracticeswing.app\nhttps://practice-swing.vercel.app/';
 
   return text;
 }
