@@ -9,8 +9,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        bg: {
+          DEFAULT: '#0F1A12',
+          card: '#1A2B1E',
+          input: '#243328',
+        },
+        accent: {
+          DEFAULT: '#4ADE80',
+          warm: '#FACC15',
+        },
+        danger: '#F87171',
+        text: {
+          DEFAULT: '#F1F5F0',
+          muted: '#8CA394',
+        },
+        border: '#2E4435',
+      },
+      fontFamily: {
+        display: ['"Chillax"', 'sans-serif'],
+        body: ['"Cabinet Grotesk"', 'sans-serif'],
       },
     },
   },

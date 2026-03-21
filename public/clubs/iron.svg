@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <rect x="0" y="0" width="400" height="400" fill="#000000"/>
+  <g transform="translate(160,180) rotate(-25)">
+    <rect x="-5" y="-190" width="10" height="145" rx="4" fill="#FFFFFF"/>
+    <path d="M-8,-50 L-8,-22 Q-8,-14 0,-10 L7,-10 Q14,-14 14,-22 L14,-50 Z" fill="#FFFFFF"/>
+    <path d="M0,-14 L0,12 Q-3,20 -8,28 L-10,42 Q-6,58 8,64 L100,68 Q122,66 128,56 Q130,46 124,38 L114,30 Q104,24 8,10 L8,-14 Z" fill="#FFFFFF"/>
+    <path d="M2,-12 L8,-12 Q12,-10 104,24 L120,34" stroke="#000000" stroke-width="2" fill="none" opacity="0.15"/>
+    <line x1="-3" y1="22" x2="64" y2="34" stroke="#000000" stroke-width="2" opacity="0.18"/>
+    <line x1="-5" y1="28" x2="74" y2="40" stroke="#000000" stroke-width="2" opacity="0.18"/>
+    <line x1="-6" y1="34" x2="82" y2="46" stroke="#000000" stroke-width="2" opacity="0.18"/>
+    <line x1="-7" y1="40" x2="88" y2="52" stroke="#000000" stroke-width="2" opacity="0.18"/>
+    <line x1="-7" y1="46" x2="92" y2="56" stroke="#000000" stroke-width="2" opacity="0.18"/>
+    <line x1="-6" y1="52" x2="94" y2="60" stroke="#000000" stroke-width="2" opacity="0.18"/>
+    <path d="M18,24 Q58,32 98,40 Q104,46 98,54 Q58,48 18,40 Z" fill="#000000" opacity="0.1"/>
+    <path d="M-8,58 Q52,70 126,54" stroke="#000000" stroke-width="3" fill="none" opacity="0.18"/>
+  </g>
+</svg>
