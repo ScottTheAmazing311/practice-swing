@@ -34,13 +34,13 @@ export default function HubHome() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
-        <div className="anim-fade-up text-center mb-10">
+        <div className="anim-fade-up w-full mb-6">
           <Image
             src="/swanglogo.png"
             alt="Swang - Golf More Good"
-            width={320}
-            height={180}
-            className="mx-auto rounded-xl"
+            width={640}
+            height={360}
+            className="w-full h-auto rounded-xl"
             priority
           />
         </div>
