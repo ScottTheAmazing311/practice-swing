@@ -2,6 +2,8 @@ export interface SwingHole {
   hole: number;
   par: number;
   score: number;
+  yardage?: number;
+  handicap?: number;
 }
 
 export interface SwingRound {
