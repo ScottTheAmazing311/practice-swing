@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Practice Swing",
-  description: "Log your golf practice sessions and share with friends",
+  title: "Swang",
+  description: "Your golf companion - scorecards, shot scoring, practice tracking, and games",
 };
 
 export const viewport: Viewport = {

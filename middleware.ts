@@ -14,5 +14,11 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/session', '/history'],
+  matcher: [
+    '/',
+    '/swing', '/swing/round', '/swing/history',
+    '/swang', '/swang/round', '/swang/history',
+    '/practice', '/practice/session', '/practice/history',
+    '/games', '/games/wolf', '/games/skins', '/games/history',
+  ],
 };

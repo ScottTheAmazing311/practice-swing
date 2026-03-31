@@ -139,7 +139,7 @@ export default function SessionPage() {
       <div className="min-h-screen flex flex-col">
         <Header
           title={ratings.length > 0 ? `${ratings.length} club${ratings.length > 1 ? 's' : ''} rated` : 'Select a club'}
-          onBack={ratings.length === 0 ? '/' : undefined}
+          onBack={ratings.length === 0 ? '/practice' : undefined}
         />
 
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-4 flex flex-col">
@@ -389,17 +389,17 @@ export default function SessionPage() {
             <p className="text-text-muted text-sm mb-10">Keep putting in the work.</p>
             <div className="flex flex-col gap-3">
               <Link
-                href="/session"
+                href="/practice/session"
                 onClick={(e) => { e.preventDefault(); window.location.reload(); }}
                 className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg text-center transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
               >
                 Log Another
               </Link>
               <Link
-                href="/"
+                href="/practice"
                 className="w-full py-4 rounded-2xl font-semibold text-base border border-border text-text-muted text-center transition-all duration-200 hover:border-text-muted/40 active:scale-[0.98] min-h-[56px]"
               >
-                Home
+                Back
               </Link>
             </div>
           </div>
