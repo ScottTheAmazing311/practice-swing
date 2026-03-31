@@ -7,21 +7,25 @@ const SECTIONS = [
     name: 'Swing',
     desc: 'Scorecard',
     href: '/swing',
+    image: '/clubs/iron.png',
   },
   {
     name: 'Swang',
     desc: 'Shot Scoring',
     href: '/swang',
+    image: '/clubs/driver.png',
   },
   {
     name: 'Practice Swing',
     desc: 'Range Sessions',
     href: '/practice',
+    image: '/home.png',
   },
   {
     name: 'Swang Games',
     desc: 'Wolf, Skins & More',
     href: '/games',
+    image: '/clubs/putter.png',
   },
 ];
 
@@ -29,7 +33,7 @@ export default function HubHome() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
-        <div className="anim-fade-up text-center mb-12">
+        <div className="anim-fade-up text-center mb-10">
           <h1
             className="text-5xl sm:text-6xl text-text leading-[1.1] mb-3 font-bold"
             style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -47,15 +51,26 @@ export default function HubHome() {
               key={section.name}
               href={section.href}
               style={{ animationDelay: `${60 + i * 50}ms` }}
-              className="anim-fade-up group relative overflow-hidden rounded-2xl min-h-[120px]
-                border border-border
+              className="anim-fade-up group relative overflow-hidden rounded-2xl min-h-[160px]
+                border-2 border-border
                 transition-all duration-300 ease-out
-                hover:scale-[1.02] hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5
+                hover:scale-[1.02] hover:border-accent/40 hover:shadow-lg hover:shadow-accent/10
                 active:scale-[0.97]"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-bg-card to-bg-card
-                group-hover:from-accent/5 group-hover:to-transparent transition-all duration-500" />
-              <div className="relative flex flex-col justify-end h-full p-4">
+              {/* Background image */}
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-55 transition-opacity duration-300"
+                style={{ backgroundImage: `url(${section.image})` }}
+              />
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              {/* Inset glow */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ boxShadow: 'inset 0 0 30px rgba(74, 222, 128, 0.06)' }}
+              />
+              {/* Content */}
+              <div className="relative z-10 flex flex-col justify-end h-full p-4">
                 <span className="text-text font-bold text-base tracking-tight group-hover:text-accent transition-colors duration-300">
                   {section.name}
                 </span>

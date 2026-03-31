@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import ShotGradeBar from '@/components/ShotGradeBar';
@@ -13,6 +13,7 @@ import {
   SwangView,
   HoleResult,
   HOLE_RESULT_POINTS,
+  HOLE_RESULT_LABELS,
 } from '@/lib/swang-types';
 import {
   getActiveSwangRound,
@@ -22,10 +23,22 @@ import {
 
 type PageView = 'setup' | 'hole' | 'round_summary';
 
-const SHOT_CLUBS = ['Driver', 'Wood', 'Hybrid', 'Long Iron', 'Mid Iron', 'Short Iron', 'Wedge', 'Putter'];
+const SHOT_CLUBS = [
+  { name: 'Driver', image: '/clubs/driver.png' },
+  { name: 'Wood', image: '/clubs/wood.png' },
+  { name: 'Hybrid', image: '/clubs/hybrid.png' },
+  { name: 'Long Iron', image: '/clubs/iron.png' },
+  { name: 'Mid Iron', image: '/clubs/iron.png' },
+  { name: 'Short Iron', image: '/clubs/iron.png' },
+  { name: 'Wedge', image: '/clubs/wedge.png' },
+  { name: 'Putter', image: '/clubs/putter.png' },
+];
+
+const GRADE_COLORS = ['#F87171', '#FB923C', '#FACC15', '#A3E635', '#4ADE80', '#22D3EE'];
 
 export default function SwangRoundPage() {
   const router = useRouter();
+  const trackerRef = useRef<HTMLDivElement>(null);
 
   // Page-level state
   const [pageView, setPageView] = useState<PageView>('setup');
@@ -33,11 +46,13 @@ export default function SwangRoundPage() {
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [round, setRound] = useState<SwangRound | null>(null);
   const [currentHoleNum, setCurrentHoleNum] = useState(1);
+  const [editingPrevious, setEditingPrevious] = useState(false);
 
   // Hole-level state machine
   const [holeView, setHoleView] = useState<SwangView>('shot_club');
   const [shots, setShots] = useState<SwangShot[]>([]);
   const [currentClub, setCurrentClub] = useState<string | null>(null);
+  const [currentClubImage, setCurrentClubImage] = useState<string | null>(null);
   const [currentGrade, setCurrentGrade] = useState<number | null>(null);
   const [holeResult, setHoleResult] = useState<HoleResult | null>(null);
   const [bonuses, setBonuses] = useState<string[]>([]);
@@ -53,6 +68,14 @@ export default function SwangRoundPage() {
     }
   }, []);
 
+  // Scroll tracker to show current hole
+  useEffect(() => {
+    if (trackerRef.current && pageView === 'hole') {
+      const el = trackerRef.current.querySelector(`[data-hole="${currentHoleNum}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentHoleNum, pageView]);
+
   const persist = useCallback((r: SwangRound) => {
     setRound(r);
     setActiveSwangRound(r);
@@ -64,9 +87,34 @@ export default function SwangRoundPage() {
     setHoleView('shot_club');
     setShots([]);
     setCurrentClub(null);
+    setCurrentClubImage(null);
     setCurrentGrade(null);
     setHoleResult(null);
     setBonuses([]);
+    setEditingPrevious(false);
+  };
+
+  // Load a completed hole back into edit state
+  const loadHoleForEdit = (holeNum: number) => {
+    if (!round) return;
+    const hole = round.holes.find((h) => h.hole === holeNum);
+    if (!hole) {
+      // Jump to this hole as new (only if it's the next uncompleted)
+      if (holeNum === round.holes.length + 1) {
+        setCurrentHoleNum(holeNum);
+        resetHoleState();
+      }
+      return;
+    }
+    setCurrentHoleNum(holeNum);
+    setShots(hole.shots);
+    setHoleResult(hole.result);
+    setBonuses(hole.bonuses);
+    setCurrentClub(null);
+    setCurrentClubImage(null);
+    setCurrentGrade(null);
+    setHoleView('hole_summary');
+    setEditingPrevious(true);
   };
 
   const startRound = () => {
@@ -86,8 +134,9 @@ export default function SwangRoundPage() {
   };
 
   // Shot flow
-  const selectClub = (club: string) => {
+  const selectClub = (club: string, image: string) => {
     setCurrentClub(club);
+    setCurrentClubImage(image);
     setCurrentGrade(null);
     setHoleView('shot_grade');
   };
@@ -102,11 +151,11 @@ export default function SwangRoundPage() {
     const newShots = [...shots, shot];
     setShots(newShots);
 
-    // If putter was graded, move to hole result
     if (currentClub === 'Putter') {
       setHoleView('hole_result');
     } else {
       setCurrentClub(null);
+      setCurrentClubImage(null);
       setCurrentGrade(null);
       setHoleView('shot_club');
     }
@@ -127,7 +176,7 @@ export default function SwangRoundPage() {
   const bonusPoints = bonuses.length;
   const holeTotal = shotTotal + resultPoints + bonusPoints;
 
-  const finishHole = () => {
+  const saveHoleAndAdvance = () => {
     if (!round || !holeResult) return;
 
     const hole: SwangHole = {
@@ -141,24 +190,146 @@ export default function SwangRoundPage() {
       holeTotal,
     };
 
+    // Replace existing hole or append
+    const existingIdx = round.holes.findIndex((h) => h.hole === currentHoleNum);
+    let newHoles: SwangHole[];
+    if (existingIdx >= 0) {
+      newHoles = [...round.holes];
+      newHoles[existingIdx] = hole;
+    } else {
+      newHoles = [...round.holes, hole];
+    }
+
+    const newTotal = newHoles.reduce((s, h) => s + h.holeTotal, 0);
+    const nextHoleNum = newHoles.length + 1;
+    const isFinished = editingPrevious ? false : currentHoleNum >= round.hole_count;
+
     const updated: SwangRound = {
       ...round,
-      holes: [...round.holes, hole],
-      totalPoints: round.totalPoints + holeTotal,
+      holes: newHoles,
+      totalPoints: newTotal,
+      completed: isFinished,
     };
 
-    if (currentHoleNum >= round.hole_count) {
-      updated.completed = true;
+    if (isFinished) {
       persist(updated);
       saveSwangRound(updated);
       setActiveSwangRound(null);
       setPageView('round_summary');
     } else {
       persist(updated);
-      setCurrentHoleNum(currentHoleNum + 1);
+      setCurrentHoleNum(nextHoleNum > round.hole_count ? round.hole_count : nextHoleNum);
       resetHoleState();
     }
   };
+
+  // Re-edit current hole from summary
+  const reEditHole = () => {
+    setShots([]);
+    setHoleResult(null);
+    setBonuses([]);
+    setCurrentClub(null);
+    setCurrentClubImage(null);
+    setCurrentGrade(null);
+    setHoleView('shot_club');
+  };
+
+  // Number of completed holes
+  const completedHoles = round ? round.holes.length : 0;
+  // The "frontier" hole - next one to play
+  const frontierHole = completedHoles + 1;
+
+  // Hole tracker strip component
+  const HoleTracker = () => {
+    if (!round) return null;
+    return (
+      <div className="bg-bg/90 backdrop-blur-sm border-t border-border">
+        <div
+          ref={trackerRef}
+          className="max-w-lg mx-auto px-3 py-2 flex gap-1 overflow-x-auto scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {Array.from({ length: round.hole_count }, (_, i) => {
+            const holeNum = i + 1;
+            const completed = round.holes.find((h) => h.hole === holeNum);
+            const isCurrent = holeNum === currentHoleNum;
+            const isFuture = holeNum > frontierHole;
+
+            return (
+              <button
+                key={holeNum}
+                data-hole={holeNum}
+                onClick={() => {
+                  if (isFuture) return;
+                  if (completed) {
+                    loadHoleForEdit(holeNum);
+                  } else if (holeNum === frontierHole) {
+                    setCurrentHoleNum(holeNum);
+                    resetHoleState();
+                  }
+                }}
+                className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold tabular-nums
+                  transition-all duration-150
+                  ${isCurrent
+                    ? 'bg-accent text-bg scale-110 shadow-md shadow-accent/20'
+                    : completed
+                      ? 'bg-bg-card border border-border text-text hover:border-accent/30 active:scale-95'
+                      : isFuture
+                        ? 'bg-bg-input/30 text-text-muted/30 cursor-not-allowed'
+                        : 'bg-bg-card border border-border text-text-muted hover:border-text-muted/40 active:scale-95'
+                  }`}
+              >
+                {completed && !isCurrent ? (
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: completed.holeTotal >= 0 ? '#4ADE80' : '#F87171' }}
+                  />
+                ) : (
+                  holeNum
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Shared: shot log with Wordle-style grade bars
+  const ShotLog = ({ shotList }: { shotList: SwangShot[] }) => (
+    <div className="space-y-2">
+      {shotList.map((s, i) => {
+        const clubData = SHOT_CLUBS.find((c) => c.name === s.club);
+        return (
+          <div key={i} className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-lg bg-cover bg-center border border-border shrink-0 opacity-60"
+              style={{ backgroundImage: clubData ? `url(${clubData.image})` : undefined }}
+            />
+            <span className="text-[11px] text-text-muted w-16 truncate shrink-0">{s.club}</span>
+            <div className="flex gap-[3px] flex-1">
+              {Array.from({ length: 6 }, (_, j) => (
+                <div
+                  key={j}
+                  className="h-5 flex-1 rounded-[3px] transition-all duration-200"
+                  style={{
+                    background: j <= s.grade ? GRADE_COLORS[s.grade] : '#1A2B1E',
+                    opacity: j <= s.grade ? 1 : 0.3,
+                  }}
+                />
+              ))}
+            </div>
+            <span
+              className="text-[11px] font-bold tabular-nums w-5 text-right"
+              style={{ color: GRADE_COLORS[s.grade] }}
+            >
+              {s.grade}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 
   // SETUP
   if (pageView === 'setup') {
@@ -213,50 +384,50 @@ export default function SwangRoundPage() {
 
   // HOLE STATE MACHINE
   if (pageView === 'hole' && round) {
-    const headerTitle = `Hole ${currentHoleNum} | Running Total: ${runningTotal >= 0 ? '+' : ''}${runningTotal} pts`;
+    const headerTitle = `Hole ${currentHoleNum} | ${runningTotal >= 0 ? '+' : ''}${runningTotal} pts`;
 
     // SHOT CLUB SELECTION
     if (holeView === 'shot_club') {
       return (
         <div className="min-h-screen flex flex-col">
           <Header title={headerTitle} onBack="/swang" />
-          <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
-            <div className="anim-fade-up text-center">
+          <main className="flex-1 max-w-lg mx-auto w-full px-4 py-4 flex flex-col">
+            <div className="anim-fade-up text-center mb-4">
               <p className="text-text text-lg font-semibold">Shot {shots.length + 1}</p>
               <p className="text-text-muted text-xs mt-1">Select your club</p>
             </div>
 
-            {/* Shot log so far */}
             {shots.length > 0 && (
-              <div className="anim-fade-up space-y-1">
-                {shots.map((s, i) => (
-                  <div key={i} className="flex items-center justify-between bg-bg-card border border-border rounded-lg px-3 py-2">
-                    <span className="text-xs text-text-muted">Shot {i + 1}: {s.club}</span>
-                    <span
-                      className="text-xs font-bold tabular-nums"
-                      style={{ color: s.grade <= 1 ? '#F87171' : s.grade <= 3 ? '#FACC15' : '#4ADE80' }}
-                    >
-                      {s.grade}
-                    </span>
-                  </div>
-                ))}
+              <div className="anim-fade-up mb-4">
+                <ShotLog shotList={shots} />
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3 anim-fade-up" style={{ animationDelay: '60ms' }}>
+            <div className="grid grid-cols-2 gap-3 flex-1">
               {SHOT_CLUBS.map((club, i) => (
                 <button
-                  key={club}
-                  onClick={() => selectClub(club)}
-                  style={{ animationDelay: `${i * 30}ms` }}
-                  className="anim-fade-up bg-bg-card border border-border rounded-xl py-4 px-3 text-sm font-semibold text-text
-                    transition-all duration-200 hover:border-accent/30 hover:bg-accent/5 active:scale-[0.97] min-h-[56px]"
+                  key={club.name}
+                  onClick={() => selectClub(club.name, club.image)}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  className="anim-fade-up relative overflow-hidden rounded-2xl
+                    min-h-[100px] border-2 border-border transition-all duration-200 ease-out
+                    active:scale-[0.97] group hover:border-text-muted/30"
                 >
-                  {club}
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-55 transition-opacity duration-200"
+                    style={{ backgroundImage: `url(${club.image})` }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="relative z-10 flex flex-col justify-end h-full p-3">
+                    <span className="text-sm font-semibold leading-tight text-text/90">
+                      {club.name}
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>
           </main>
+          <HoleTracker />
         </div>
       );
     }
@@ -265,31 +436,44 @@ export default function SwangRoundPage() {
     if (holeView === 'shot_grade' && currentClub) {
       return (
         <div className="min-h-screen flex flex-col">
-          <Header title={headerTitle} onBack={() => { setCurrentClub(null); setHoleView('shot_club'); }} />
+          <Header title={headerTitle} onBack={() => { setCurrentClub(null); setCurrentClubImage(null); setHoleView('shot_club'); }} />
           <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-8">
-            <div className="anim-fade-up text-center">
-              <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Shot {shots.length + 1}</p>
-              <p className="text-text text-xl font-semibold">{currentClub}</p>
-              <p className="text-text-muted text-xs mt-2">How was the shot?</p>
+            <div className="anim-fade-up relative w-full aspect-square max-w-[180px] mx-auto rounded-2xl overflow-hidden border border-border">
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-60"
+                style={{ backgroundImage: currentClubImage ? `url(${currentClubImage})` : undefined }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-bg/90 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3">
+                <p className="text-text-muted text-[10px] uppercase tracking-wider">Shot {shots.length + 1}</p>
+                <p className="text-text text-lg font-semibold">{currentClub}</p>
+              </div>
             </div>
 
-            <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
+            <div className="anim-fade-up" style={{ animationDelay: '80ms' }}>
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-4 text-center">
+                How was the shot?
+              </p>
               <ShotGradeBar value={currentGrade} onChange={gradeShot} />
             </div>
           </main>
 
           {currentGrade !== null && (
-            <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
-              <div className="max-w-lg mx-auto">
-                <button
-                  onClick={confirmShot}
-                  className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
-                >
-                  {currentClub === 'Putter' ? 'Finish Shots' : 'Next Shot'}
-                </button>
+            <div className="sticky bottom-0">
+              <div className="p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
+                <div className="max-w-lg mx-auto">
+                  <button
+                    onClick={confirmShot}
+                    className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
+                  >
+                    {currentClub === 'Putter' ? 'Finish Shots' : 'Next Shot'}
+                  </button>
+                </div>
               </div>
+              <HoleTracker />
             </div>
           )}
+          {currentGrade === null && <HoleTracker />}
         </div>
       );
     }
@@ -305,22 +489,31 @@ export default function SwangRoundPage() {
               <p className="text-text-muted text-xs mt-1">How did you score?</p>
             </div>
 
-            <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
+            <div className="anim-fade-up" style={{ animationDelay: '40ms' }}>
+              <ShotLog shotList={shots} />
+            </div>
+
+            <div className="anim-fade-up" style={{ animationDelay: '80ms' }}>
               <HoleResultPicker value={holeResult} onChange={setHoleResult} />
             </div>
           </main>
 
-          {holeResult && (
-            <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
-              <div className="max-w-lg mx-auto">
-                <button
-                  onClick={confirmResult}
-                  className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
-                >
-                  Continue
-                </button>
+          {holeResult ? (
+            <div className="sticky bottom-0">
+              <div className="p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
+                <div className="max-w-lg mx-auto">
+                  <button
+                    onClick={confirmResult}
+                    className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
+              <HoleTracker />
             </div>
+          ) : (
+            <HoleTracker />
           )}
         </div>
       );
@@ -342,15 +535,18 @@ export default function SwangRoundPage() {
             </div>
           </main>
 
-          <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
-            <div className="max-w-lg mx-auto">
-              <button
-                onClick={confirmBonus}
-                className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
-              >
-                See Hole Summary
-              </button>
+          <div className="sticky bottom-0">
+            <div className="p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
+              <div className="max-w-lg mx-auto">
+                <button
+                  onClick={confirmBonus}
+                  className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
+                >
+                  See Hole Summary
+                </button>
+              </div>
             </div>
+            <HoleTracker />
           </div>
         </div>
       );
@@ -373,15 +569,19 @@ export default function SwangRoundPage() {
               <p className="text-text-muted text-xs mt-1">points</p>
             </div>
 
-            {/* Breakdown */}
-            <div className="anim-fade-up space-y-2" style={{ animationDelay: '60ms' }}>
-              <div className="bg-bg-card border border-border rounded-xl p-4 space-y-3">
+            <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
+              <div
+                className="bg-bg-card border border-border rounded-2xl p-4 space-y-3"
+                style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}
+              >
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Shot grades ({shots.length} shots)</span>
                   <span className="text-text font-semibold tabular-nums">+{shotTotal}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-text-muted">Hole result</span>
+                  <span className="text-text-muted">
+                    {holeResult ? HOLE_RESULT_LABELS[holeResult] : 'Result'}
+                  </span>
                   <span
                     className="font-semibold tabular-nums"
                     style={{ color: resultPoints >= 0 ? '#4ADE80' : '#F87171' }}
@@ -391,7 +591,7 @@ export default function SwangRoundPage() {
                 </div>
                 {bonusPoints > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-text-muted">Bonuses</span>
+                    <span className="text-text-muted">Bonuses ({bonuses.join(', ')})</span>
                     <span className="text-accent font-semibold tabular-nums">+{bonusPoints}</span>
                   </div>
                 )}
@@ -404,31 +604,36 @@ export default function SwangRoundPage() {
               </div>
             </div>
 
-            {/* Shot detail */}
-            <div className="anim-fade-up space-y-1" style={{ animationDelay: '120ms' }}>
-              {shots.map((s, i) => (
-                <div key={i} className="flex items-center justify-between bg-bg-card border border-border rounded-lg px-3 py-2">
-                  <span className="text-xs text-text-muted">Shot {i + 1}: {s.club}</span>
-                  <span
-                    className="text-xs font-bold tabular-nums"
-                    style={{ color: s.grade <= 1 ? '#F87171' : s.grade <= 3 ? '#FACC15' : '#4ADE80' }}
-                  >
-                    {s.grade}
-                  </span>
-                </div>
-              ))}
+            <div className="anim-fade-up" style={{ animationDelay: '120ms' }}>
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-3">Shot Breakdown</p>
+              <ShotLog shotList={shots} />
             </div>
           </main>
 
-          <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
-            <div className="max-w-lg mx-auto">
-              <button
-                onClick={finishHole}
-                className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
-              >
-                {currentHoleNum >= (round?.hole_count ?? 18) ? 'Finish Round' : 'Next Hole'}
-              </button>
+          <div className="sticky bottom-0">
+            <div className="p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
+              <div className="max-w-lg mx-auto flex gap-3">
+                {editingPrevious && (
+                  <button
+                    onClick={reEditHole}
+                    className="flex-1 py-4 rounded-2xl font-semibold text-base border border-border text-text-muted transition-all duration-200 hover:border-text-muted/40 active:scale-[0.98] min-h-[56px]"
+                  >
+                    Re-do Hole
+                  </button>
+                )}
+                <button
+                  onClick={saveHoleAndAdvance}
+                  className="flex-1 py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
+                >
+                  {editingPrevious
+                    ? 'Save Changes'
+                    : currentHoleNum >= (round?.hole_count ?? 18)
+                      ? 'Finish Round'
+                      : 'Next Hole'}
+                </button>
+              </div>
             </div>
+            <HoleTracker />
           </div>
         </div>
       );
@@ -452,20 +657,37 @@ export default function SwangRoundPage() {
             <p className="text-text-muted text-sm mt-1">total points ({round.hole_count} holes)</p>
           </div>
 
-          {/* Per-hole breakdown */}
           <div className="anim-fade-up space-y-2" style={{ animationDelay: '60ms' }}>
             {round.holes.map((h) => (
-              <div key={h.hole} className="bg-bg-card border border-border rounded-xl px-4 py-3 flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-text font-semibold">Hole {h.hole}</span>
-                  <span className="text-xs text-text-muted ml-2">{h.shots.length} shots</span>
+              <div
+                key={h.hole}
+                className="bg-bg-card border border-border rounded-xl px-4 py-3"
+                style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="text-sm text-text font-semibold">Hole {h.hole}</span>
+                    <span className="text-xs text-text-muted ml-2">{h.shots.length} shots</span>
+                    {h.bonuses.length > 0 && (
+                      <span className="text-[10px] text-accent ml-2">+{h.bonusPoints} bonus</span>
+                    )}
+                  </div>
+                  <span
+                    className="text-lg font-bold tabular-nums"
+                    style={{ color: h.holeTotal >= 0 ? '#4ADE80' : '#F87171' }}
+                  >
+                    {h.holeTotal >= 0 ? '+' : ''}{h.holeTotal}
+                  </span>
                 </div>
-                <span
-                  className="text-lg font-bold tabular-nums"
-                  style={{ color: h.holeTotal >= 0 ? '#4ADE80' : '#F87171' }}
-                >
-                  {h.holeTotal >= 0 ? '+' : ''}{h.holeTotal}
-                </span>
+                <div className="flex gap-[2px]">
+                  {h.shots.map((s, j) => (
+                    <div
+                      key={j}
+                      className="h-3 flex-1 rounded-[2px]"
+                      style={{ background: GRADE_COLORS[s.grade], opacity: 0.7 }}
+                    />
+                  ))}
+                </div>
               </div>
             ))}
           </div>

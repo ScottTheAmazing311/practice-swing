@@ -6,6 +6,8 @@ import Header from '@/components/Header';
 import { SwangRound } from '@/lib/swang-types';
 import { getSwangRounds } from '@/lib/swang-storage';
 
+const GRADE_COLORS = ['#F87171', '#FB923C', '#FACC15', '#A3E635', '#4ADE80', '#22D3EE'];
+
 export default function SwangHistory() {
   const [rounds, setRounds] = useState<SwangRound[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function SwangHistory() {
         {loading ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="animate-pulse bg-bg-card border border-border rounded-2xl h-20" />
+              <div key={i} className="animate-pulse bg-bg-card border border-border rounded-2xl h-24" />
             ))}
           </div>
         ) : rounds.length === 0 ? (
@@ -43,7 +45,7 @@ export default function SwangHistory() {
                   style={{ animationDelay: `${i * 40}ms` }}
                   className="anim-fade-up bg-bg-card border border-border rounded-2xl p-4"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-text font-semibold text-sm">{r.course}</p>
                       <p className="text-[11px] text-text-muted">
@@ -61,17 +63,27 @@ export default function SwangHistory() {
                     </div>
                   </div>
 
-                  {/* Per-hole bar */}
-                  <div className="flex gap-[2px]">
+                  {/* Per-hole shot grade bars */}
+                  <div className="space-y-1">
                     {r.holes.map((h) => (
-                      <div
-                        key={h.hole}
-                        className="h-3 flex-1 rounded-[2px]"
-                        style={{
-                          background: h.holeTotal >= 5 ? '#4ADE80' : h.holeTotal >= 0 ? '#FACC15' : '#F87171',
-                          opacity: 0.7,
-                        }}
-                      />
+                      <div key={h.hole} className="flex items-center gap-2">
+                        <span className="text-[10px] text-text-muted w-5 text-right tabular-nums shrink-0">{h.hole}</span>
+                        <div className="flex gap-[2px] flex-1">
+                          {h.shots.map((s, j) => (
+                            <div
+                              key={j}
+                              className="h-3 flex-1 rounded-[2px]"
+                              style={{ background: GRADE_COLORS[s.grade], opacity: 0.7 }}
+                            />
+                          ))}
+                        </div>
+                        <span
+                          className="text-[10px] font-bold tabular-nums w-7 text-right"
+                          style={{ color: h.holeTotal >= 0 ? '#4ADE80' : '#F87171' }}
+                        >
+                          {h.holeTotal >= 0 ? '+' : ''}{h.holeTotal}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
