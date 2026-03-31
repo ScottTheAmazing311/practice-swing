@@ -49,6 +49,7 @@ export interface SwangRound {
   hole_count: 9 | 18;
   completed: boolean;
   totalPoints: number;
+  username?: string;
 }
 
 export type SwangView =

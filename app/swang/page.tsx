@@ -4,15 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import { getActiveSwangRound, getSwangRounds } from '@/lib/swang-storage';
+import { getUsername, getCrewLeaderboard } from '@/lib/swang-leaderboard';
 
 export default function SwangLanding() {
   const [hasActive, setHasActive] = useState(false);
   const [recentCount, setRecentCount] = useState(0);
+  const [hasUsername, setHasUsername] = useState(false);
+  const [leaderboardCount, setLeaderboardCount] = useState(0);
 
   useEffect(() => {
     const active = getActiveSwangRound();
     setHasActive(!!active && !active.completed);
     setRecentCount(getSwangRounds().length);
+    setHasUsername(!!getUsername());
+    setLeaderboardCount(getCrewLeaderboard().length);
   }, []);
 
   return (
@@ -50,6 +55,30 @@ export default function SwangLanding() {
                 {hasActive ? 'Resume Round' : 'Start Round'}
               </span>
               <span className="text-bg/60 text-[10px] font-medium">Shot-by-shot scoring</span>
+            </div>
+          </Link>
+
+          <Link
+            href="/swang/leaderboard"
+            className="group relative overflow-hidden rounded-2xl min-h-[72px]
+              border border-border
+              transition-all duration-300 ease-out
+              hover:scale-[1.02] hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5
+              active:scale-[0.97]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-bg-card to-bg-card
+              group-hover:from-accent/5 group-hover:to-transparent transition-all duration-500" />
+            <div className="relative flex flex-col items-center justify-center px-4 py-5">
+              <span className="text-text font-bold text-base tracking-tight group-hover:text-accent transition-colors duration-300">
+                Leaderboard
+              </span>
+              <span className="text-text-muted text-[10px] font-medium">
+                {hasUsername
+                  ? leaderboardCount > 0
+                    ? `${leaderboardCount} score${leaderboardCount !== 1 ? 's' : ''}`
+                    : 'No scores yet'
+                  : 'Set your tag'}
+              </span>
             </div>
           </Link>
 

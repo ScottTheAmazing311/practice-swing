@@ -20,6 +20,12 @@ import {
   setActiveSwangRound,
   saveSwangRound,
 } from '@/lib/swang-storage';
+import {
+  getUsername,
+  getCrewLeaderboard,
+  addLeaderboardEntry,
+  LeaderboardEntry,
+} from '@/lib/swang-leaderboard';
 
 type PageView = 'setup' | 'hole' | 'round_summary';
 
@@ -48,6 +54,10 @@ export default function SwangRoundPage() {
   const [currentHoleNum, setCurrentHoleNum] = useState(1);
   const [editingPrevious, setEditingPrevious] = useState(false);
 
+  // Username & leaderboard
+  const [username, setUsernameState] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+
   // Hole-level state machine
   const [holeView, setHoleView] = useState<SwangView>('shot_club');
   const [shots, setShots] = useState<SwangShot[]>([]);
@@ -58,6 +68,7 @@ export default function SwangRoundPage() {
   const [bonuses, setBonuses] = useState<string[]>([]);
 
   useEffect(() => {
+    setUsernameState(getUsername());
     const active = getActiveSwangRound();
     if (active && !active.completed) {
       setRound(active);
@@ -126,6 +137,7 @@ export default function SwangRoundPage() {
       hole_count: holeCount,
       completed: false,
       totalPoints: 0,
+      username: username || undefined,
     };
     persist(r);
     setCurrentHoleNum(1);
@@ -215,6 +227,19 @@ export default function SwangRoundPage() {
       persist(updated);
       saveSwangRound(updated);
       setActiveSwangRound(null);
+      // Add to leaderboard
+      if (username) {
+        addLeaderboardEntry({
+          id: `lb-${updated.id}`,
+          username,
+          course: updated.course,
+          totalPoints: updated.totalPoints,
+          holeCount: updated.hole_count,
+          date: updated.created_at,
+          roundId: updated.id,
+        });
+      }
+      setLeaderboard(getCrewLeaderboard());
       setPageView('round_summary');
     } else {
       persist(updated);
@@ -642,10 +667,16 @@ export default function SwangRoundPage() {
 
   // ROUND SUMMARY
   if (pageView === 'round_summary' && round) {
+    // Find current user's rank
+    const userRank = username
+      ? leaderboard.findIndex((e) => e.roundId === round.id) + 1
+      : 0;
+
     return (
       <div className="min-h-screen flex flex-col">
         <Header title="Round Complete" />
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
+          {/* Score hero */}
           <div className="anim-fade-up text-center">
             <p className="text-text-muted text-xs uppercase tracking-wider mb-2">{round.course}</p>
             <p
@@ -655,9 +686,105 @@ export default function SwangRoundPage() {
               {round.totalPoints >= 0 ? '+' : ''}{round.totalPoints}
             </p>
             <p className="text-text-muted text-sm mt-1">total points ({round.hole_count} holes)</p>
+            {username && (
+              <p className="text-accent text-xs font-bold mt-2 tracking-widest">{username}</p>
+            )}
           </div>
 
-          <div className="anim-fade-up space-y-2" style={{ animationDelay: '60ms' }}>
+          {/* Arcade Leaderboard */}
+          {leaderboard.length > 0 && (
+            <div className="anim-fade-up" style={{ animationDelay: '80ms' }}>
+              <div
+                className="bg-bg-card border border-border rounded-2xl overflow-hidden"
+                style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}
+              >
+                {/* Leaderboard header */}
+                <div className="px-4 py-3 border-b border-border bg-accent/5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-accent font-bold uppercase tracking-widest">Leaderboard</p>
+                    <p className="text-[10px] text-text-muted">All Rounds</p>
+                  </div>
+                </div>
+
+                {/* Entries */}
+                <div className="divide-y divide-border/50">
+                  {leaderboard.slice(0, 10).map((entry, i) => {
+                    const rank = i + 1;
+                    const isCurrentRound = entry.roundId === round.id;
+                    const isTopThree = rank <= 3;
+                    const rankColors = ['#FACC15', '#C0C0C0', '#CD7F32'];
+
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`flex items-center gap-3 px-4 py-3 transition-colors duration-200 ${
+                          isCurrentRound ? 'bg-accent/10' : ''
+                        }`}
+                      >
+                        {/* Rank */}
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black tabular-nums shrink-0"
+                          style={{
+                            background: isTopThree ? rankColors[rank - 1] + '20' : 'transparent',
+                            color: isTopThree ? rankColors[rank - 1] : '#6B7280',
+                            border: isTopThree ? `1px solid ${rankColors[rank - 1]}40` : '1px solid transparent',
+                          }}
+                        >
+                          {rank}
+                        </div>
+
+                        {/* Username */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-bold tracking-wider truncate ${
+                            isCurrentRound ? 'text-accent' : 'text-text'
+                          }`}>
+                            {entry.username}
+                          </p>
+                          <p className="text-[10px] text-text-muted truncate">
+                            {entry.course} - {entry.holeCount}h
+                          </p>
+                        </div>
+
+                        {/* Score */}
+                        <p
+                          className="text-lg font-black tabular-nums shrink-0"
+                          style={{ color: entry.totalPoints >= 0 ? '#4ADE80' : '#F87171' }}
+                        >
+                          {entry.totalPoints >= 0 ? '+' : ''}{entry.totalPoints}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Your rank callout */}
+                {username && userRank > 0 && (
+                  <div className="px-4 py-2 border-t border-border bg-accent/5">
+                    <p className="text-[11px] text-text-muted text-center">
+                      You ranked <span className="text-accent font-bold">#{userRank}</span> of {leaderboard.length}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* No username prompt */}
+          {!username && (
+            <div className="anim-fade-up text-center py-4" style={{ animationDelay: '80ms' }}>
+              <p className="text-text-muted text-xs mb-2">Set a username to join the leaderboard</p>
+              <button
+                onClick={() => router.push('/swang/leaderboard')}
+                className="text-accent text-sm font-medium hover:underline"
+              >
+                Set Username
+              </button>
+            </div>
+          )}
+
+          {/* Hole breakdown */}
+          <div className="anim-fade-up space-y-2" style={{ animationDelay: '140ms' }}>
+            <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-3">Hole Breakdown</p>
             {round.holes.map((h) => (
               <div
                 key={h.hole}
@@ -701,12 +828,20 @@ export default function SwangRoundPage() {
             >
               New Round
             </button>
-            <button
-              onClick={() => router.push('/swang')}
-              className="w-full py-4 rounded-2xl font-semibold text-base border border-border text-text-muted transition-all duration-200 hover:border-text-muted/40 active:scale-[0.98] min-h-[56px]"
-            >
-              Back
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push('/swang/leaderboard')}
+                className="flex-1 py-4 rounded-2xl font-semibold text-sm border border-border text-text-muted transition-all duration-200 hover:border-accent/30 hover:text-accent active:scale-[0.98] min-h-[56px]"
+              >
+                Leaderboard
+              </button>
+              <button
+                onClick={() => router.push('/swang')}
+                className="flex-1 py-4 rounded-2xl font-semibold text-sm border border-border text-text-muted transition-all duration-200 hover:border-text-muted/40 active:scale-[0.98] min-h-[56px]"
+              >
+                Back
+              </button>
+            </div>
           </div>
         </div>
       </div>
