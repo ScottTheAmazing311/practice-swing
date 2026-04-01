@@ -26,6 +26,11 @@ import {
   addLeaderboardEntry,
   LeaderboardEntry,
 } from '@/lib/swang-leaderboard';
+import {
+  searchCourses,
+  hasApiKey,
+  GolfCourse,
+} from '@/lib/golf-course-api';
 
 type PageView = 'setup' | 'hole' | 'round_summary';
 
@@ -45,11 +50,20 @@ const GRADE_COLORS = ['#F87171', '#FB923C', '#FACC15', '#A3E635', '#4ADE80', '#2
 export default function SwangRoundPage() {
   const router = useRouter();
   const trackerRef = useRef<HTMLDivElement>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   // Page-level state
   const [pageView, setPageView] = useState<PageView>('setup');
   const [course, setCourse] = useState('');
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
+
+  // Course search state
+  const [courseQuery, setCourseQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GolfCourse[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
+  const [manualMode, setManualMode] = useState(false);
+  const apiAvailable = hasApiKey();
   const [round, setRound] = useState<SwangRound | null>(null);
   const [currentHoleNum, setCurrentHoleNum] = useState(1);
   const [editingPrevious, setEditingPrevious] = useState(false);
@@ -91,6 +105,30 @@ export default function SwangRoundPage() {
     setRound(r);
     setActiveSwangRound(r);
   }, []);
+
+  // Debounced course search
+  const handleSearch = (query: string) => {
+    setCourseQuery(query);
+    setSelectedCourse(null);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (!query.trim() || !apiAvailable) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    searchTimeout.current = setTimeout(async () => {
+      const results = await searchCourses(query);
+      setSearchResults(results);
+      setSearching(false);
+    }, 400);
+  };
+
+  const pickCourse = (c: GolfCourse) => {
+    setSelectedCourse(c);
+    setSearchResults([]);
+    setCourseQuery(c.course_name);
+    setCourse(c.course_name);
+  };
 
   const runningTotal = round ? round.totalPoints : 0;
 
@@ -363,14 +401,68 @@ export default function SwangRoundPage() {
         <Header title="New Swang Round" onBack="/swang" />
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-8">
           <div className="anim-fade-up space-y-3">
-            <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Course Name</p>
-            <input
-              type="text"
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-              placeholder="e.g. Pine Valley"
-              className="w-full bg-bg-card border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-text-muted/40 focus:outline-none focus:border-accent/40 transition-colors duration-200"
-            />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Course</p>
+              {apiAvailable && (
+                <button
+                  onClick={() => { setManualMode(!manualMode); setSelectedCourse(null); setSearchResults([]); }}
+                  className="text-[10px] text-accent font-medium"
+                >
+                  {manualMode ? 'Search courses' : 'Enter manually'}
+                </button>
+              )}
+            </div>
+
+            {(!apiAvailable || manualMode) ? (
+              <input
+                type="text"
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+                placeholder="e.g. Pine Valley"
+                className="w-full bg-bg-card border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-text-muted/40 focus:outline-none focus:border-accent/40 transition-colors duration-200"
+              />
+            ) : (
+              <div className="relative">
+                <input
+                  type="text"
+                  value={courseQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Search golf courses..."
+                  className="w-full bg-bg-card border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-text-muted/40 focus:outline-none focus:border-accent/40 transition-colors duration-200"
+                />
+                {searching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+                  </div>
+                )}
+
+                {searchResults.length > 0 && !selectedCourse && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-xl overflow-hidden z-20 max-h-[300px] overflow-y-auto shadow-xl">
+                    {searchResults.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => pickCourse(c)}
+                        className="w-full px-4 py-3 text-left hover:bg-accent/5 transition-colors border-b border-border/50 last:border-b-0"
+                      >
+                        <p className="text-sm text-text font-medium">{c.course_name}</p>
+                        <p className="text-[11px] text-text-muted">
+                          {[c.location?.city, c.location?.state].filter(Boolean).join(', ')}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCourse && (
+              <div className="bg-bg-card border border-accent/30 rounded-xl p-3 space-y-1">
+                <p className="text-sm text-text font-semibold">{selectedCourse.course_name}</p>
+                <p className="text-[11px] text-text-muted">
+                  {[selectedCourse.location?.city, selectedCourse.location?.state].filter(Boolean).join(', ')}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="anim-fade-up space-y-3" style={{ animationDelay: '60ms' }}>
