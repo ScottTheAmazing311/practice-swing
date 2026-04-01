@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 
@@ -22,16 +23,15 @@ export default function GamesLanding() {
       <Header title="Swang Games" onBack="/" />
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
-        <div className="anim-fade-up text-center mb-12">
-          <h2
-            className="text-4xl text-text leading-[1.1] mb-3 font-bold"
-            style={{ fontFamily: "'Outfit', sans-serif" }}
-          >
-            Swang Games
-          </h2>
-          <p className="text-text-muted text-sm max-w-[260px] mx-auto leading-relaxed">
-            Wolf, Skins & More
-          </p>
+        <div className="anim-fade-up w-full mb-8">
+          <Image
+            src="/games.png"
+            alt="Swang Games - Wolf, Skins & More"
+            width={640}
+            height={360}
+            className="w-full h-auto rounded-xl"
+            priority
+          />
         </div>
 
         <div className="w-full flex flex-col gap-3 anim-fade-up" style={{ animationDelay: '80ms' }}>
