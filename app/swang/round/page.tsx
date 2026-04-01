@@ -180,6 +180,20 @@ export default function SwangRoundPage() {
     );
   };
 
+  const [showAbandon, setShowAbandon] = useState(false);
+
+  const abandonRound = () => {
+    setActiveSwangRound(null);
+    setRound(null);
+    setPageView('setup');
+    setCourse('');
+    setCourseQuery('');
+    setSelectedCourse(null);
+    setSelectedTee(null);
+    setShowAbandon(false);
+    resetHoleState();
+  };
+
   const resetHoleState = () => {
     setHoleView('shot_club');
     setShots([]);
@@ -632,7 +646,37 @@ export default function SwangRoundPage() {
               ))}
             </div>
           </main>
-          <HoleTracker />
+          <div>
+            <HoleTracker />
+            <div className="max-w-lg mx-auto px-4 py-2">
+              {!showAbandon ? (
+                <button
+                  onClick={() => setShowAbandon(true)}
+                  className="w-full py-2 text-sm text-text-muted/50 transition-all duration-200 hover:text-danger active:scale-[0.98]"
+                >
+                  Abandon Round
+                </button>
+              ) : (
+                <div className="bg-bg-card border border-danger/30 rounded-2xl p-4 space-y-3">
+                  <p className="text-sm text-text text-center font-medium">Abandon this round? Progress will be lost.</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowAbandon(false)}
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm border border-border text-text-muted transition-all duration-200 hover:border-text-muted/40 active:scale-[0.98]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={abandonRound}
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm bg-danger text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                    >
+                      Abandon
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       );
     }
