@@ -41,6 +41,12 @@ export interface SwangHole {
   holeTotal: number;
 }
 
+export interface SwangHoleInfo {
+  par: number;
+  yardage: number;
+  handicap: number;
+}
+
 export interface SwangRound {
   id: string;
   created_at: string;
@@ -50,6 +56,7 @@ export interface SwangRound {
   completed: boolean;
   totalPoints: number;
   username?: string;
+  holeInfo?: SwangHoleInfo[];
 }
 
 export type SwangView =

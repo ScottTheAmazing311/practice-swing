@@ -30,6 +30,7 @@ import {
   searchCourses,
   hasApiKey,
   GolfCourse,
+  GolfTeeBox,
 } from '@/lib/golf-course-api';
 
 type PageView = 'setup' | 'hole' | 'round_summary';
@@ -62,6 +63,7 @@ export default function SwangRoundPage() {
   const [searchResults, setSearchResults] = useState<GolfCourse[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
+  const [selectedTee, setSelectedTee] = useState<GolfTeeBox | null>(null);
   const [manualMode, setManualMode] = useState(false);
   const apiAvailable = hasApiKey();
   const [round, setRound] = useState<SwangRound | null>(null);
@@ -128,9 +130,55 @@ export default function SwangRoundPage() {
     setSearchResults([]);
     setCourseQuery(c.course_name);
     setCourse(c.course_name);
+    const tees = [...(c.tees?.male ?? []), ...(c.tees?.female ?? [])];
+    const defaultTee = tees.find((t) => t.holes && t.holes.length > 0) ?? tees[0] ?? null;
+    setSelectedTee(defaultTee);
+    if (defaultTee?.number_of_holes) {
+      setHoleCount(defaultTee.number_of_holes === 9 ? 9 : 18);
+    }
   };
 
+  const pickTee = (tee: GolfTeeBox) => {
+    setSelectedTee(tee);
+    if (tee.number_of_holes) {
+      setHoleCount(tee.number_of_holes === 9 ? 9 : 18);
+    }
+  };
+
+  const allTees = selectedCourse
+    ? [...(selectedCourse.tees?.male ?? []), ...(selectedCourse.tees?.female ?? [])]
+    : [];
+
   const runningTotal = round ? round.totalPoints : 0;
+
+  // Current hole info from API data
+  const currentHoleInfo = round?.holeInfo?.[currentHoleNum - 1] ?? null;
+
+  const HoleInfoBar = () => {
+    if (!currentHoleInfo) return null;
+    return (
+      <div className="anim-fade-up flex items-center justify-center gap-6 bg-bg-card border border-border rounded-xl px-4 py-2.5 mb-4"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}
+      >
+        <div className="text-center">
+          <p className="text-[10px] text-text-muted uppercase tracking-wider">Par</p>
+          <p className="text-lg font-bold text-accent tabular-nums">{currentHoleInfo.par}</p>
+        </div>
+        {currentHoleInfo.yardage > 0 && (
+          <div className="text-center">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">Yards</p>
+            <p className="text-lg font-bold text-text tabular-nums">{currentHoleInfo.yardage}</p>
+          </div>
+        )}
+        {currentHoleInfo.handicap > 0 && (
+          <div className="text-center">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">Hcp</p>
+            <p className="text-lg font-bold text-text-muted tabular-nums">{currentHoleInfo.handicap}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const resetHoleState = () => {
     setHoleView('shot_club');
@@ -167,6 +215,12 @@ export default function SwangRoundPage() {
   };
 
   const startRound = () => {
+    const holeInfo = selectedTee?.holes?.slice(0, holeCount).map((h) => ({
+      par: h.par,
+      yardage: h.yardage,
+      handicap: h.handicap,
+    }));
+
     const r: SwangRound = {
       id: `swang-${Date.now()}`,
       created_at: new Date().toISOString(),
@@ -176,6 +230,7 @@ export default function SwangRoundPage() {
       completed: false,
       totalPoints: 0,
       username: username || undefined,
+      holeInfo: holeInfo && holeInfo.length > 0 ? holeInfo : undefined,
     };
     persist(r);
     setCurrentHoleNum(1);
@@ -405,7 +460,7 @@ export default function SwangRoundPage() {
               <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Course</p>
               {apiAvailable && (
                 <button
-                  onClick={() => { setManualMode(!manualMode); setSelectedCourse(null); setSearchResults([]); }}
+                  onClick={() => { setManualMode(!manualMode); setSelectedCourse(null); setSelectedTee(null); setSearchResults([]); }}
                   className="text-[10px] text-accent font-medium"
                 >
                   {manualMode ? 'Search courses' : 'Enter manually'}
@@ -465,24 +520,56 @@ export default function SwangRoundPage() {
             )}
           </div>
 
-          <div className="anim-fade-up space-y-3" style={{ animationDelay: '60ms' }}>
-            <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Holes</p>
-            <div className="flex gap-3">
-              {([9, 18] as const).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setHoleCount(n)}
-                  className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-200 min-h-[48px]
-                    ${holeCount === n
-                      ? 'bg-accent text-bg'
-                      : 'bg-bg-card border border-border text-text-muted hover:border-text-muted/40'
-                    }`}
-                >
-                  {n} Holes
-                </button>
-              ))}
+          {/* Tee box selector */}
+          {selectedCourse && allTees.length > 0 && (
+            <div className="anim-fade-up space-y-3" style={{ animationDelay: '40ms' }}>
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Tee Box</p>
+              <div className="flex flex-wrap gap-2">
+                {allTees.map((tee, i) => {
+                  const active = selectedTee === tee;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => pickTee(tee)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 min-h-[44px]
+                        active:scale-95
+                        ${active
+                          ? 'bg-accent text-bg shadow-md'
+                          : 'bg-bg-card border border-border text-text-muted hover:border-text-muted/40'
+                        }`}
+                    >
+                      <span className="block">{tee.tee_name}</span>
+                      <span className={`block text-[10px] mt-0.5 ${active ? 'text-bg/60' : 'text-text-muted/60'}`}>
+                        {tee.total_yards ? `${tee.total_yards} yds` : ''}{tee.par_total ? ` / Par ${tee.par_total}` : ''}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Holes - show when no tee selected (manual mode or no API) */}
+          {!selectedTee && (
+            <div className="anim-fade-up space-y-3" style={{ animationDelay: '60ms' }}>
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Holes</p>
+              <div className="flex gap-3">
+                {([9, 18] as const).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setHoleCount(n)}
+                    className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-200 min-h-[48px]
+                      ${holeCount === n
+                        ? 'bg-accent text-bg'
+                        : 'bg-bg-card border border-border text-text-muted hover:border-text-muted/40'
+                      }`}
+                  >
+                    {n} Holes
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </main>
 
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
@@ -509,6 +596,7 @@ export default function SwangRoundPage() {
         <div className="min-h-screen flex flex-col">
           <Header title={headerTitle} onBack="/swang" />
           <main className="flex-1 max-w-lg mx-auto w-full px-4 py-4 flex flex-col">
+            <HoleInfoBar />
             <div className="anim-fade-up text-center mb-4">
               <p className="text-text text-lg font-semibold">Shot {shots.length + 1}</p>
               <p className="text-text-muted text-xs mt-1">Select your club</p>
@@ -555,6 +643,7 @@ export default function SwangRoundPage() {
         <div className="min-h-screen flex flex-col">
           <Header title={headerTitle} onBack={() => { setCurrentClub(null); setCurrentClubImage(null); setHoleView('shot_club'); }} />
           <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-8">
+            <HoleInfoBar />
             <div className="anim-fade-up relative w-full aspect-square max-w-[180px] mx-auto rounded-2xl overflow-hidden border border-border">
               <div
                 className="absolute inset-0 bg-cover bg-center opacity-60"
@@ -601,6 +690,7 @@ export default function SwangRoundPage() {
         <div className="min-h-screen flex flex-col">
           <Header title={headerTitle} onBack={() => setHoleView('shot_club')} />
           <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
+            <HoleInfoBar />
             <div className="anim-fade-up text-center">
               <p className="text-text text-lg font-semibold">Hole {currentHoleNum} Result</p>
               <p className="text-text-muted text-xs mt-1">How did you score?</p>
@@ -642,6 +732,7 @@ export default function SwangRoundPage() {
         <div className="min-h-screen flex flex-col">
           <Header title={headerTitle} onBack={() => setHoleView('hole_result')} />
           <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
+            <HoleInfoBar />
             <div className="anim-fade-up text-center">
               <p className="text-text text-lg font-semibold">Bonus Points</p>
               <p className="text-text-muted text-xs mt-1">Any highlights this hole?</p>
@@ -675,6 +766,7 @@ export default function SwangRoundPage() {
         <div className="min-h-screen flex flex-col">
           <Header title={headerTitle} />
           <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6">
+            <HoleInfoBar />
             <div className="anim-fade-up text-center">
               <p className="text-text-muted text-xs uppercase tracking-wider mb-2">Hole {currentHoleNum}</p>
               <p
