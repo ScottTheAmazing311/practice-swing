@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import { getActiveSwingRound, getSwingRounds } from '@/lib/swing-storage';
@@ -20,16 +21,15 @@ export default function SwingLanding() {
       <Header title="Swing" onBack="/" />
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
-        <div className="anim-fade-up text-center mb-12">
-          <h2
-            className="text-4xl text-text leading-[1.1] mb-3 font-bold"
-            style={{ fontFamily: "'Outfit', sans-serif" }}
-          >
-            Swing
-          </h2>
-          <p className="text-text-muted text-sm max-w-[260px] mx-auto leading-relaxed">
-            Traditional scorecard
-          </p>
+        <div className="anim-fade-up w-full mb-8">
+          <Image
+            src="/scorecard.png"
+            alt="Swang Golf Company - Guest Scorecard"
+            width={640}
+            height={360}
+            className="w-full h-auto rounded-xl"
+            priority
+          />
         </div>
 
         <div className="w-full flex flex-col gap-3 anim-fade-up" style={{ animationDelay: '80ms' }}>
