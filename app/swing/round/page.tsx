@@ -178,6 +178,19 @@ export default function SwingRoundPage() {
     setView('summary');
   };
 
+  const [showAbandon, setShowAbandon] = useState(false);
+
+  const abandonRound = () => {
+    setActiveSwingRound(null);
+    setRound(null);
+    setView('setup');
+    setCourseQuery('');
+    setCourseName('');
+    setSelectedCourse(null);
+    setSelectedTee(null);
+    setShowAbandon(false);
+  };
+
   // Computed
   const scoredHoles = round?.holes.filter((h) => h.score > 0) ?? [];
   const totalScore = scoredHoles.reduce((s, h) => s + h.score, 0);
@@ -508,18 +521,44 @@ export default function SwingRoundPage() {
           </div>
         </main>
 
-        {allScored && (
-          <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
-            <div className="max-w-lg mx-auto">
+        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
+          <div className="max-w-lg mx-auto flex flex-col gap-3">
+            {allScored && (
               <button
                 onClick={finishRound}
                 className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
               >
                 Finish Round
               </button>
-            </div>
+            )}
+            {!showAbandon ? (
+              <button
+                onClick={() => setShowAbandon(true)}
+                className="w-full py-3 rounded-2xl font-semibold text-sm text-text-muted/60 transition-all duration-200 hover:text-danger active:scale-[0.98]"
+              >
+                Abandon Round
+              </button>
+            ) : (
+              <div className="bg-bg-card border border-danger/30 rounded-2xl p-4 space-y-3">
+                <p className="text-sm text-text text-center font-medium">Abandon this round? Progress will be lost.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowAbandon(false)}
+                    className="flex-1 py-3 rounded-xl font-semibold text-sm border border-border text-text-muted transition-all duration-200 hover:border-text-muted/40 active:scale-[0.98]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={abandonRound}
+                    className="flex-1 py-3 rounded-xl font-semibold text-sm bg-danger text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                  >
+                    Abandon
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   }
