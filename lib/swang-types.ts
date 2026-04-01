@@ -21,11 +21,17 @@ export const HOLE_RESULT_LABELS: Record<HoleResult, string> = {
   eagle_plus: 'Eagle+',
 };
 
-export const BONUS_OPTIONS = [
+export const BONUS_REASONS = [
   'Unreal Shot',
+  'Clutch Putt',
   'High Vibes',
   'Broke the Curse',
-  'Clutch Shot',
+  'Best Drive of the Day',
+  'Recovery Shot',
+  'Stuck It Close',
+  'Played It Smart',
+  'Sand Save',
+  'Kept It Together',
 ] as const;
 
 export const MAX_BONUS = 5;

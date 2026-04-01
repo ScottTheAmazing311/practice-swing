@@ -81,7 +81,8 @@ export default function SwangRoundPage() {
   const [currentClubImage, setCurrentClubImage] = useState<string | null>(null);
   const [currentGrade, setCurrentGrade] = useState<number | null>(null);
   const [holeResult, setHoleResult] = useState<HoleResult | null>(null);
-  const [bonuses, setBonuses] = useState<string[]>([]);
+  const [bonusPoints, setBonusPoints] = useState(0);
+  const [bonusReason, setBonusReason] = useState<string | null>(null);
 
   useEffect(() => {
     setUsernameState(getUsername());
@@ -201,7 +202,8 @@ export default function SwangRoundPage() {
     setCurrentClubImage(null);
     setCurrentGrade(null);
     setHoleResult(null);
-    setBonuses([]);
+    setBonusPoints(0);
+    setBonusReason(null);
     setEditingPrevious(false);
   };
 
@@ -220,7 +222,8 @@ export default function SwangRoundPage() {
     setCurrentHoleNum(holeNum);
     setShots(hole.shots);
     setHoleResult(hole.result);
-    setBonuses(hole.bonuses);
+    setBonusPoints(hole.bonusPoints);
+    setBonusReason(hole.bonuses[0] || null);
     setCurrentClub(null);
     setCurrentClubImage(null);
     setCurrentGrade(null);
@@ -292,7 +295,6 @@ export default function SwangRoundPage() {
 
   const shotTotal = shots.reduce((s, sh) => s + sh.grade, 0);
   const resultPoints = holeResult ? HOLE_RESULT_POINTS[holeResult] : 0;
-  const bonusPoints = bonuses.length;
   const holeTotal = shotTotal + resultPoints + bonusPoints;
 
   const saveHoleAndAdvance = () => {
@@ -302,7 +304,7 @@ export default function SwangRoundPage() {
       hole: currentHoleNum,
       shots,
       result: holeResult,
-      bonuses,
+      bonuses: bonusReason ? [bonusReason] : [],
       bonusPoints,
       shotTotal,
       resultPoints,
@@ -359,7 +361,8 @@ export default function SwangRoundPage() {
   const reEditHole = () => {
     setShots([]);
     setHoleResult(null);
-    setBonuses([]);
+    setBonusPoints(0);
+    setBonusReason(null);
     setCurrentClub(null);
     setCurrentClubImage(null);
     setCurrentGrade(null);
@@ -783,7 +786,7 @@ export default function SwangRoundPage() {
             </div>
 
             <div className="anim-fade-up" style={{ animationDelay: '60ms' }}>
-              <BonusPointsPicker selected={bonuses} onChange={setBonuses} />
+              <BonusPointsPicker points={bonusPoints} reason={bonusReason} onPointsChange={setBonusPoints} onReasonChange={setBonusReason} />
             </div>
           </main>
 
@@ -844,7 +847,7 @@ export default function SwangRoundPage() {
                 </div>
                 {bonusPoints > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-text-muted">Bonuses ({bonuses.join(', ')})</span>
+                    <span className="text-text-muted">Bonus{bonusReason ? ` (${bonusReason})` : ''}</span>
                     <span className="text-accent font-semibold tabular-nums">+{bonusPoints}</span>
                   </div>
                 )}
