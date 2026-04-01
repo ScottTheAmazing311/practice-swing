@@ -6,6 +6,11 @@ import Header from '@/components/Header';
 
 const GAMES = [
   {
+    name: 'Quick Play',
+    desc: 'Solo 9-hole timing game',
+    href: '/games/quickplay',
+  },
+  {
     name: 'Wolf',
     desc: '4 players, pick your partner',
     href: '/games/wolf',

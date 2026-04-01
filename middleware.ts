@@ -19,6 +19,6 @@ export const config = {
     '/swing', '/swing/round', '/swing/history',
     '/swang', '/swang/round', '/swang/history', '/swang/leaderboard',
     '/practice', '/practice/session', '/practice/history',
-    '/games', '/games/wolf', '/games/skins', '/games/history',
+    '/games', '/games/quickplay', '/games/wolf', '/games/skins', '/games/history',
   ],
 };
