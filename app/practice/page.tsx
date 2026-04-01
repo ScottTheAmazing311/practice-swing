@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
@@ -12,16 +13,15 @@ export default function PracticeLanding() {
       <Header title="Practice Swing" onBack="/" />
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
-        <div className="anim-fade-up text-center mb-12">
-          <h2
-            className="text-4xl text-text leading-[1.1] mb-3 font-bold"
-            style={{ fontFamily: "'Outfit', sans-serif" }}
-          >
-            Practice Swing
-          </h2>
-          <p className="text-text-muted text-sm max-w-[260px] mx-auto leading-relaxed">
-            Grind. Track. Repeat.
-          </p>
+        <div className="anim-fade-up w-full mb-8">
+          <Image
+            src="/range.png"
+            alt="Practice Swing - Grind. Track. Repeat."
+            width={640}
+            height={360}
+            className="w-full h-auto rounded-xl"
+            priority
+          />
         </div>
 
         <div className="w-full flex flex-row gap-3 anim-fade-up" style={{ animationDelay: '80ms' }}>
