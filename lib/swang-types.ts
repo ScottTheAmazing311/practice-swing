@@ -1,7 +1,13 @@
 export interface SwangShot {
   club: string;
   grade: number; // 0-5
+  vibes?: number; // 0-10
 }
+
+export const VIBE_LABELS = [
+  'Awful', 'Pain', 'Rough', 'Meh', 'Fine',
+  'Decent', 'Good', 'Vibin', 'Electric', 'Unreal', 'Goated',
+] as const;
 
 export type HoleResult = 'double_bogey_plus' | 'bogey' | 'par' | 'birdie' | 'eagle_plus';
 
@@ -68,6 +74,7 @@ export interface SwangRound {
 export type SwangView =
   | 'shot_club'
   | 'shot_grade'
+  | 'shot_vibes'
   | 'hole_result'
   | 'bonus'
   | 'hole_summary';
