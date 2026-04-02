@@ -74,7 +74,6 @@ export interface SwangRound {
 export type SwangView =
   | 'shot_club'
   | 'shot_grade'
-  | 'shot_vibes'
   | 'hole_result'
   | 'bonus'
   | 'hole_summary';
