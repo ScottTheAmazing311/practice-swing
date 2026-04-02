@@ -182,6 +182,34 @@ export default function SwangRoundPage() {
   };
 
   const [showAbandon, setShowAbandon] = useState(false);
+  const [shared, setShared] = useState(false);
+
+  const shareRound = async () => {
+    if (!round) return;
+    const holes = round.holes.map((h) => {
+      const sign = h.holeTotal >= 0 ? '+' : '';
+      return `Hole ${h.hole}: ${sign}${h.holeTotal} pts (${h.shots.length} shots)`;
+    }).join('\n');
+
+    const sign = round.totalPoints >= 0 ? '+' : '';
+    const text = `Swang Round\n${round.course} - ${round.hole_count} holes\nTotal: ${sign}${round.totalPoints} pts\n\n${holes}\n\nswanggolf.com`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(text);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } catch { /* ignore */ }
+    }
+  };
 
   const abandonRound = () => {
     setActiveSwangRound(null);
@@ -1054,8 +1082,14 @@ export default function SwangRoundPage() {
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
           <div className="max-w-lg mx-auto flex flex-col gap-3">
             <button
-              onClick={() => { setRound(null); setPageView('setup'); setCourse(''); resetHoleState(); }}
+              onClick={shareRound}
               className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
+            >
+              {shared ? 'Copied' : 'Share Round'}
+            </button>
+            <button
+              onClick={() => { setRound(null); setPageView('setup'); setCourse(''); resetHoleState(); }}
+              className="w-full py-4 rounded-2xl font-semibold text-sm border border-border text-text-muted transition-all duration-200 hover:border-accent/30 hover:text-accent active:scale-[0.98] min-h-[56px]"
             >
               New Round
             </button>
