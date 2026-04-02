@@ -14,6 +14,7 @@ import {
   HoleResult,
   HOLE_RESULT_POINTS,
   HOLE_RESULT_LABELS,
+  VIBE_LABELS,
 } from '@/lib/swang-types';
 import {
   getActiveSwangRound,
@@ -80,6 +81,7 @@ export default function SwangRoundPage() {
   const [currentClub, setCurrentClub] = useState<string | null>(null);
   const [currentClubImage, setCurrentClubImage] = useState<string | null>(null);
   const [currentGrade, setCurrentGrade] = useState<number | null>(null);
+  const [currentVibes, setCurrentVibes] = useState<number>(5);
   const [holeResult, setHoleResult] = useState<HoleResult | null>(null);
   const [bonusPoints, setBonusPoints] = useState(0);
   const [bonusReason, setBonusReason] = useState<string | null>(null);
@@ -232,6 +234,7 @@ export default function SwangRoundPage() {
     setHoleResult(null);
     setBonusPoints(0);
     setBonusReason(null);
+    setCurrentVibes(5);
     setEditingPrevious(false);
   };
 
@@ -297,7 +300,13 @@ export default function SwangRoundPage() {
 
   const confirmShot = () => {
     if (!currentClub || currentGrade === null) return;
-    const shot: SwangShot = { club: currentClub, grade: currentGrade };
+    setCurrentVibes(5);
+    setHoleView('shot_vibes');
+  };
+
+  const confirmVibes = () => {
+    if (!currentClub || currentGrade === null) return;
+    const shot: SwangShot = { club: currentClub, grade: currentGrade, vibes: currentVibes };
     const newShots = [...shots, shot];
     setShots(newShots);
 
@@ -488,6 +497,11 @@ export default function SwangRoundPage() {
             >
               {s.grade}
             </span>
+            {s.vibes !== undefined && (
+              <span className="text-[9px] text-text-muted/60 w-12 text-right truncate" title={VIBE_LABELS[s.vibes]}>
+                {VIBE_LABELS[s.vibes]}
+              </span>
+            )}
           </div>
         );
       })}
@@ -755,6 +769,114 @@ export default function SwangRoundPage() {
             </div>
           )}
           {currentGrade === null && <HoleTracker />}
+        </div>
+      );
+    }
+
+    // SHOT VIBES
+    if (holeView === 'shot_vibes' && currentClub) {
+      const vibeColor = currentVibes <= 2 ? '#F87171' : currentVibes <= 4 ? '#FB923C' : currentVibes <= 6 ? '#FACC15' : currentVibes <= 8 ? '#4ADE80' : '#22D3EE';
+      const dialAngle = -135 + (currentVibes / 10) * 270; // -135 to +135 degrees
+      return (
+        <div className="min-h-screen flex flex-col">
+          <Header title={headerTitle} onBack={() => setHoleView('shot_grade')} />
+          <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-8">
+            <HoleInfoBar />
+
+            <div className="anim-fade-up text-center">
+              <p className="text-text text-lg font-semibold">Yeah but how were the vibes?</p>
+              <p className="text-text-muted text-xs mt-1">{currentClub} -- Grade {currentGrade}</p>
+            </div>
+
+            {/* Amp Dial */}
+            <div className="anim-fade-up flex flex-col items-center" style={{ animationDelay: '80ms' }}>
+              <div className="relative w-56 h-32 mb-2">
+                {/* Arc background */}
+                <svg viewBox="0 0 200 110" className="w-full h-full">
+                  {/* Track arc */}
+                  <path
+                    d="M 20 100 A 80 80 0 0 1 180 100"
+                    fill="none"
+                    stroke="#1A2B1E"
+                    strokeWidth="12"
+                    strokeLinecap="round"
+                  />
+                  {/* Filled arc */}
+                  <path
+                    d="M 20 100 A 80 80 0 0 1 180 100"
+                    fill="none"
+                    stroke={vibeColor}
+                    strokeWidth="12"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(currentVibes / 10) * 251.3} 251.3`}
+                    className="transition-all duration-300"
+                  />
+                  {/* Tick marks */}
+                  {Array.from({ length: 11 }, (_, i) => {
+                    const angle = (-180 + (i / 10) * 180) * (Math.PI / 180);
+                    const x1 = 100 + 90 * Math.cos(angle);
+                    const y1 = 100 + 90 * Math.sin(angle);
+                    const x2 = 100 + 83 * Math.cos(angle);
+                    const y2 = 100 + 83 * Math.sin(angle);
+                    return (
+                      <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                        stroke={i <= currentVibes ? vibeColor : '#2A3B2E'}
+                        strokeWidth="2" strokeLinecap="round"
+                        className="transition-all duration-300"
+                      />
+                    );
+                  })}
+                  {/* Needle */}
+                  <g transform={`rotate(${dialAngle}, 100, 100)`} className="transition-transform duration-300">
+                    <line x1="100" y1="100" x2="100" y2="30" stroke={vibeColor} strokeWidth="3" strokeLinecap="round" />
+                    <circle cx="100" cy="100" r="6" fill={vibeColor} />
+                    <circle cx="100" cy="100" r="3" fill="#0F1A12" />
+                  </g>
+                </svg>
+              </div>
+
+              {/* Vibe label */}
+              <p className="text-2xl font-bold tracking-tight transition-all duration-300"
+                style={{ color: vibeColor }}>
+                {VIBE_LABELS[currentVibes]}
+              </p>
+
+              {/* Slider */}
+              <div className="w-full mt-6 px-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={currentVibes}
+                  onChange={(e) => setCurrentVibes(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, ${vibeColor} 0%, ${vibeColor} ${currentVibes * 10}%, #1A2B1E ${currentVibes * 10}%, #1A2B1E 100%)`,
+                    accentColor: vibeColor,
+                  }}
+                />
+                <div className="flex justify-between mt-2 px-1">
+                  <span className="text-[9px] text-text-muted">Awful</span>
+                  <span className="text-[9px] text-text-muted">Goated</span>
+                </div>
+              </div>
+            </div>
+          </main>
+
+          <div className="sticky bottom-0">
+            <div className="p-4 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-10">
+              <div className="max-w-lg mx-auto">
+                <button
+                  onClick={confirmVibes}
+                  className="w-full py-4 rounded-2xl font-semibold text-base bg-accent text-bg transition-all duration-200 hover:brightness-110 active:scale-[0.98] min-h-[56px]"
+                >
+                  {currentClub === 'Putter' ? 'Finish Shots' : 'Next Shot'}
+                </button>
+              </div>
+            </div>
+            <HoleTracker />
+          </div>
         </div>
       );
     }
